@@ -1,63 +1,42 @@
+<img src="https://apre.it/wp-content/uploads/2021/01/logo_uni-pisa.png" width="150" />  
 
-# Thesis Project Title
+# Meta Learning for Online Continual Learning (Meta-OCL) 
 
-### Author: [Your Name]  
-### Date: [Month, Year]
+### Thesis Project in Continual Learning (CL)
+
+[@Unipisa](@unipisa) - _Computer Science Department_   
+_M.Sc. Computer Science - Artificial Intelligence_
+
+**Author:** Irene Pisani [^1]
 
 ---
 
 ## Table of Contents
 
 - [Introduction](#introduction)
-- [Objectives](#objectives)
-- [Features](#features)
-- [Technologies Used](#technologies-used)
-- [Installation](#installation)
+- [Installation](#installation-and-usage)
 - [Usage](#usage)
-- [Dataset](#dataset)
-- [Results](#results)
 - [Project Structure](#project-structure)
-- [Contributing](#contributing)
-- [License](#license)
 
----
-
-## Introduction
+## Introduction 
 
 This repository contains the source code and documentation for my thesis project titled **"[Your Thesis Title]"**. The goal of this project is to [briefly describe the goal of the project]. 
 
 This thesis focuses on [brief overview of the problem you are solving], and aims to provide [a summary of your solution or contribution].
 
----
-
-## Objectives
-
-- [Objective 1]
+**Objectives, goal, and features** - This are the objective:
+- [Objective 1] 
 - [Objective 2]
 - [Objective 3]
 
----
-
-## Features
-
-- [Feature 1]
-- [Feature 2]
-- [Feature 3]
-
----
-
-## Technologies Used
-
-The project is built using the following technologies:
-
+**Tools and frameworks** - The project is built using the following technologies:
 - Programming Language: [e.g., Python, Java]
 - Libraries/Frameworks: [e.g., TensorFlow, Flask, SciPy]
 - Tools: [e.g., Docker, Git, Jupyter Notebooks]
 - [Any other important tools/techniques used]
 
----
 
-## Installation
+## Installation and Usage
 
 Follow these steps to set up the project locally:
 
@@ -81,9 +60,7 @@ Follow these steps to set up the project locally:
 
 4. [Any other setup instructions]
 
----
 
-## Usage
 
 To run the project, follow these instructions:
 
@@ -96,38 +73,14 @@ Example command:
 \`\`\`bash
 python main.py --input data/input_file.csv --output results/output_file.csv
 \`\`\`
-
----
-
-## Dataset
-
-The dataset used in this project is [public/private], and can be found here:
-
-- [Link to dataset]
-  
-If the dataset is not included due to size limitations, please follow the instructions below to download it:
-
-1. [Step 1 to download dataset]
-2. [Step 2 to prepare dataset]
-
----
-
-## Results
-
-The key results of the project are as follows:
-
-- [Briefly describe key findings/results]
-- [Provide screenshots, graphs, or tables of results]
-- [Any performance metrics or evaluation details]
-
----
+## Usage
 
 ## Project Structure
 
 Here’s a quick overview of the files and directories:
 
-\`\`\`bash
-your-repo-name/
+```
+meta-ocl/
 │
 ├── data/                   # Dataset files (not included in repo, if private)
 ├── src/                    # Source code
@@ -139,36 +92,15 @@ your-repo-name/
 ├── results/                # Results from analysis or experiments
 ├── README.md               # Project documentation (this file)
 └── requirements.txt        # List of dependencies
-\`\`\`
+```
+
+## Credits, Licence and Ackwnoledge
+
+Portions of the code used in this project are derived from [Name of the Project](), a project that is still actively maintained. Full credit goes to the original authors for their contributions, upon which this work is based.  
+
+Code is available under MIT license.[^2] See [LICENSE](LICENSE) for the full license.
 
 ---
 
-## Contributing
-
-Contributions are welcome! If you'd like to contribute to this project, feel free to fork the repository and create a pull request. 
-
-1. Fork the repo.
-2. Create a new branch (\`git checkout -b feature-branch\`).
-3. Make your changes and commit them (\`git commit -m "Description of changes"\`).
-4. Push to the branch (\`git push origin feature-branch\`).
-5. Open a pull request.
-
----
-
-## License
-
-This project is licensed under the [LICENSE NAME, e.g., MIT] License - see the [LICENSE](./LICENSE) file for details.
-
----
-
-## Acknowledgements
-
-I would like to thank [mention any institutions, advisors, or colleagues] for their guidance and support during the course of this thesis.
-
----
-
-## Contact
-
-For any questions or feedback, feel free to contact me at:  
-**Email**: [your-email@example.com]  
-**GitHub**: [https://github.com/yourusername]
+[^1]: Contact me at my [istitutional email address](mail-to:i.pisani1@studenti.unipi.it). 
+[^2]: A short and simple permissive license with conditions only requiring preservation of copyright and license notices.
