@@ -111,15 +111,15 @@ meta-ocl/
 meta-ocl/
 ├── avalanche.git/           # AVALANCHE - EXTERNAL LIBRARY
 ├── config/                  # HYDRA - CONFIGURATION FILES
-│   ├── benchmark/              # Configfor benchmarks
-│   ├── best_configs/           # Config file for best configs found by main_hp_tuning.py
-│   ├── deploy/                 # Config file for deploy (machine specific results and data path)
-│   ├── evaluation/             # Config file to manage evaluation frequency and parrallelism
-│   ├── experiment/             # Config file toManage general experiment settings
-│   ├── model/                  # Config file for models
-│   ├── optimizer/              # Config file for optimizer
-│   ├── scheduler/              # Config file for scheduler
-│   └── strategy/               # Config file for CL strategy
+│   ├── benchmark/              # Config for benchmarks
+│   ├── best_configs/           # Config for best configs found by main_hp_tuning.py
+│   ├── deploy/                 # Config for deploy (machine specific results and data path)
+│   ├── evaluation/             # Config to manage evaluation frequency and parrallelism
+│   ├── experiment/             # Config to manage general experiment settings
+│   ├── model/                  # Config for models
+│   ├── optimizer/              # Config for optimizer
+│   ├── scheduler/              # Config for scheduler
+│   └── strategy/               # Config for CL strategy
 ├── experiments              # PROJECT EXPERIMENTS 
 │   ├── main_hp_tuning.py       # Hyperparameter optimization
 │   ├── main.py                 # Launch single experiments
@@ -128,8 +128,7 @@ meta-ocl/
 ├── notebooks/                  # Additional utilities
 ├── results/                 # EXPERIMENTAL RESULTS
 ├── scripts/                    # Scripts for additional functions
-│   ├── ...                     # Migrate results
-│   └── get_results.py          # Easily collect results from multiple seeds
+│   └── get_results.py          # Collect results from multiple seeds
 ├── src/                     # MAIN - SOURCE CODE                      
 │   ├── factories/              # Scripts for benchmark, method, and model creation
 │   ├── strategies/             # Scripts for additional strategies or plugins
