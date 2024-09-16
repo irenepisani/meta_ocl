@@ -80,6 +80,19 @@ python main.py --input data/input_file.csv --output results/output_file.csv
 Here’s a quick overview of the files and directories:
 
 ```
+
+│
+├── data/                   # Dataset files (not included in repo, if private)
+├── src/                    # Source code
+│   ├── main.py             # Main script to run the project
+│   ├── utils.py            # Utility functions
+│   └── model/              # Model scripts
+├── notebooks/              # Jupyter notebooks for analysis
+├── tests/                  # Unit tests for the project
+├── results/                # Results from analysis or experiments
+├── README.md               # Project documentation (this file)
+└── requirements.txt        # List of dependencies
+
 meta-ocl/
 │
 ├── data/                   # Dataset files (not included in repo, if private)
@@ -92,6 +105,37 @@ meta-ocl/
 ├── results/                # Results from analysis or experiments
 ├── README.md               # Project documentation (this file)
 └── requirements.txt        # List of dependencies
+```
+
+```
+meta-ocl/
+├── avalanche.git/           # AVALANCHE - EXTERNAL LIBRARY
+├── config/                  # HYDRA - CONFIGURATION FILES
+│   ├── benchmark/              # Configfor benchmarks
+│   ├── best_configs/           # Config file for best configs found by main_hp_tuning.py
+│   ├── deploy/                 # Config file for deploy (machine specific results and data path)
+│   ├── evaluation/             # Config file to manage evaluation frequency and parrallelism
+│   ├── experiment/             # Config file toManage general experiment settings
+│   ├── model/                  # Config file for models
+│   ├── optimizer/              # Config file for optimizer
+│   ├── scheduler/              # Config file for scheduler
+│   └── strategy/               # Config file for CL strategy
+├── experiments              # PROJECT EXPERIMENTS 
+│   ├── main_hp_tuning.py       # Hyperparameter optimization
+│   ├── main.py                 # Launch single experiments
+│   ├── gradient_insight.py     # [NEW] Gradients analysis 
+│   └── spaces.py               # Additional script
+├── notebooks/                  # Additional utilities
+├── results/                 # EXPERIMENTAL RESULTS
+├── scripts/                    # Scripts for additional functions
+│   ├── ...                     # Migrate results
+│   └── get_results.py          # Easily collect results from multiple seeds
+├── src/                     # MAIN - SOURCE CODE                      
+│   ├── factories/              # Scripts for benchmark, method, and model creation
+│   ├── strategies/             # Scripts for additional strategies or plugins
+│   └── toolkit/                # Scripts for additional functions
+└── test/
+                  
 ```
 
 ## Credits, Licence and Ackwnoledge
