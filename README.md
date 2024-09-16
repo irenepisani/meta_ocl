@@ -9,7 +9,7 @@ _M.Sc. Computer Science - Artificial Intelligence_
 
 **Author:** Irene Pisani [^1]
 
----
+
 
 ## Table of Contents
 
@@ -18,7 +18,7 @@ _M.Sc. Computer Science - Artificial Intelligence_
 - [Usage](#usage)
 - [Project Structure](#project-structure)
 
----
+
 
 ## Introduction 
 
@@ -37,7 +37,7 @@ This thesis focuses on [brief overview of the problem you are solving], and aims
 - Tools: [e.g., Docker, Git, Jupyter Notebooks]
 - [Any other important tools/techniques used]
 
----
+
 
 ## Installation and Usage
 
@@ -64,7 +64,6 @@ Follow these instruction to set up the project on local machine:
 
 6.  Test the environment by launching one of the script contained in `experiment/` directory.
 
----
 
 ## Usage 
 
@@ -104,8 +103,6 @@ To run the project, follow these instructions:
 * **[How to run experiments with gradients analysis]**
 * **[How to ...]**
 
-
-## Usage
 
 ## Project Structure
 
