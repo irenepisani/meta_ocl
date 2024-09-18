@@ -124,8 +124,7 @@ meta-ocl/
 ├── experiments              # PROJECT EXPERIMENTS 
 │   ├── main_hp_tuning.py       # Hyperparameter optimization
 │   ├── main.py                 # Launch single experiments
-│   ├── gradient_insight.py     # [NEW] Gradients analysis 
-│   └── spaces.py               # Additional script
+│   └── gradient_insight.py     # [NEW] Gradients analysis 
 ├── notebooks/                  # Additional utilities
 ├── results/                 # EXPERIMENTAL RESULTS
 ├── scripts/                    # Scripts for additional functions
@@ -134,7 +133,6 @@ meta-ocl/
 │   ├── factories/              # Scripts for benchmark, method, and model creation
 │   ├── strategies/             # Scripts for additional strategies or plugins
 │   └── toolkit/                # Scripts for additional functions
-└── test/                       # Additional test 
 ├── LICENSE                     # Licence
 ├── READM.me                    # Project description
 ├── enviromental.yaml           # Environment
@@ -142,13 +140,12 @@ meta-ocl/
                   
 ```
 
-## Credits, Licence and Ackwnoledge
+## Credits, Licence and Ackwnoledges
 
-Portions of the code used in this project are derived from [Name of the Project](), a project that is still actively maintained. Full credit goes to the original authors for their contributions, upon which this work is based.  
+Portions of the code used in this project are derived from [OCL survey](https://github.com/AlbinSou/ocl_survey) project. Credit goes to the original authors for their contributions, upon which this work is based.  
 
-Code is available under MIT license.[^2] See [LICENSE](LICENSE) for the full license.
+Code is available under MIT license. See [LICENSE](LICENSE) for the full license.
 
 ---
 
-[^1]: Contact me at my [istitutional email address](mail-to:i.pisani1@studenti.unipi.it). 
-[^2]: A short and simple permissive license with conditions only requiring preservation of copyright and license notices.
+[^1]: Contact me at my [istitutional email address](mail-to:i.pisani1@studenti.unipi.it).
