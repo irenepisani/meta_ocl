@@ -57,8 +57,7 @@ conda env config vars set PYTHONPATH=/home/.../meta_ocl
 > [!NOTE]
 > Add a new `deploy config` or change the content of `config/deploy/default.yaml` in order to specity where the results should be stored, the datasets fetched and data logged.
 
-The environment is now ready for launching one of the script contained in `experiments/` directory.
-Launch gradients_insight.py to test the environment as follow:
+The environment is now ready for launching one of the script contained in `experiments/` directory. Launch main.py to test the environment as follow:
    ```
    cd experiments/
    python main.py strategy=er experiment=split_cifar100
