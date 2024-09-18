@@ -13,14 +13,11 @@ _M.Sc. Computer Science - Artificial Intelligence_
 
 ## Table of Contents
 
-- [Introduction](#introduction)
-- [Installation](#installation-and-usage)
-- [Usage](#usage)
-- [Project Structure](#project-structure)
+- [Project introduction](#project-introduction)
+- [Project instructions](#project-instructions)
+- [Project structure](#project-structure)
 
-
-
-## Introduction 
+## Project introduction 
 
 This repository contains the source code and documentation for my thesis project titled **"[Your Thesis Title]"**. The goal of this project is to [briefly describe the goal of the project]. 
 
@@ -37,74 +34,62 @@ This thesis focuses on [brief overview of the problem you are solving], and aims
 - Tools: [e.g., Docker, Git, Jupyter Notebooks]
 - [Any other important tools/techniques used]
 
+## Project instructions
 
+### Installation 
+Follow these instruction to set up the project on local machine.
 
-## Installation and Usage
+Clone this repository and create a new environment with python 3.10.
+```
+git clone https://github.com/irenepisani/meta_ocl.git
+```
+```
+conda create -n meta_ocl python=3.10
+conda activate meta_ocl
+```
+Install the required dependencies and set your PYTHONPATH as the root of the project.
+```
+pip install -r requirements.txt
+```
+```
+conda env config vars set PYTHONPATH=/home/.../meta_ocl
+```
+> [!NOTE]
+> Add a new `deploy config` or change the content of `config/deploy/default.yaml` in order to specity where the results should be stored, the datasets fetched and data logged.
 
-Follow these instruction to set up the project on local machine:
-
-1. Clone this repository:
-   ```
-   git clone https://github.com/AlbinSou/ocl_survey.git
-   ```
-2. Create a new environment with python 3.10
-   ```
-   conda create -n ocl_survey python=3.10
-   conda activate ocl_survey
-   ```
-3. Install the required dependencies:
-   ```
-   pip install -r requirements.txt
-   ```
-4. Set your PYTHONPATH as the root of the project
-   ```
-   conda env config vars set PYTHONPATH=/home/.../ocl_survey
-   ```
-5. Create a `deploy config` in order to specity where the results should be stored, the datasets fetched and data logged. Add a new `deploy config` or change the content of `config/deploy/default.yaml`.
-
-6.  Test the environment by launching one of the script contained in `experiment/` directory.
-
-
-## Usage 
-
-To run the project, follow these instructions:
-
-* **[How to start the project]**
-   Launch main.py to test the environment as follow:
+The environment is now ready for launching one of the script contained in `experiments/` directory.
+Launch gradients_insight.py to test the environment as follow:
    ```
    cd experiments/
    python main.py strategy=er experiment=split_cifar100
    ```
-* **[How to run experiments or analysis]**
-  To launch an experiment, start from the default config file and change the part that needs to change
-   ```
-   python main.py strategy=er_ace experiment=split_cifar100 evaluation=parallel
-   ```
-   Before running the script, you can display the full config with "-c job" option
-   ```
-   python main.py strategy=er_ace experiment=split_cifar100 evaluation=parallel -c job
-   ```
-   It's also possible to override more fine-grained arguments
-   ```
-   python main.py strategy=er_ace experiment=split_cifar100 evaluation=parallel strategy.alpha=0.7 optimizer.lr=0.05
-   ```
-   Finally, to use the parameters found by the hyperparameter search, use
-   ```
-   python main.py strategy=er_ace experiment=split_cifar100 +best_configs=split_cifar100/er_ace
-   ```
+> [!NOTE]
+> **How to interpret or visualize results.**
+>  Results will be saved in the directory specified in results.yaml. Under the following structure:`<results_dir>/<strategy_name>_<benchmark_name>/<seed>/`.
 
-* **[How to interpret or visualize results]** Results will be saved in the directory specified in results.yaml. Under the following structure:`<results_dir>/<strategy_name>_<benchmark_name>/<seed>/`.
+### Usage 
 
-* **[How to run hyperparameter selection experiments]**
-  Modify the strategy specific search parameters, search range etc ... inside main_hp_tuning.py then run
+In order to start running the project experiments, follow these instructions.
+
+#### Gradients analysis experiments 
+
+To launch the experiment, start from the default config file and change the part that needs to change. Before running the script, you can display the full config with `-c job` option. It's also possible to override more fine-grained arguments or to use the parameters found by the hyperparameter search experiments. 
    ```
-   python main_hp_tuning.py strategy=er_ace experiment=split_cifar100
+   python gradients_insight.py strategy=er_ace experiment=split_cifar100 evaluation=parallel
    ```
-* **[How to run experiments with gradients analysis]**
-* **[How to ...]**
+   ```
+   python gradients_insight.py strategy=er_ace experiment=split_cifar100 evaluation=parallel -c job
+   ```
+   ```
+   python gradients_insight.py strategy=er_ace experiment=split_cifar100 evaluation=parallel strategy.alpha=0.7 optimizer.lr=0.05
+   ```
+   ```
+   python gradients_insight.py strategy=er_ace experiment=split_cifar100 +best_configs=split_cifar100/er_ace
+   ```
+  
 
 
-## Project Structure
+## Project structure
 
 Here’s a quick overview of the files and directories:
 
