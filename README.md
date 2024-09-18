@@ -19,20 +19,18 @@ _M.Sc. Computer Science - Artificial Intelligence_
 
 ## Project introduction 
 
-This repository contains the source code and documentation for my thesis project titled **"[Your Thesis Title]"**. The goal of this project is to [briefly describe the goal of the project]. 
 
-This thesis focuses on [brief overview of the problem you are solving], and aims to provide [a summary of your solution or contribution].
-
+<! --- This repository contains the source code and documentation for my thesis project titled **"[Your Thesis Title]"**. The goal of this project is to [briefly describe the goal of the project]. This thesis focuses on [brief overview of the problem you are solving], and aims to provide [a summary of your solution or contribution]. -->
 **Objectives, goal, and features** - This are the objective:
 - [Objective 1] 
 - [Objective 2]
 - [Objective 3]
-
 **Tools and frameworks** - The project is built using the following technologies:
 - Programming Language: [e.g., Python, Java]
 - Libraries/Frameworks: [e.g., TensorFlow, Flask, SciPy]
 - Tools: [e.g., Docker, Git, Jupyter Notebooks]
 - [Any other important tools/techniques used]
+
 
 ## Project instructions
 
