@@ -132,4 +132,4 @@ Code is available under MIT license. See [LICENSE](LICENSE) for the full license
 
 ---
 
-[^1]: Contact me at my [istitutional email address](mail-to:i.pisani1@studenti.unipi.it).
+[^1]: Contact me at my [istitutional email address](mailto:i.pisani1@studenti.unipi.it).
