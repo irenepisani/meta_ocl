@@ -19,7 +19,8 @@ _M.Sc. Computer Science - Artificial Intelligence_
 
 ## Project introduction 
 
-/// Work in progress
+// Add here project introduction ...
+
 <!--- This repository contains the source code and documentation for my thesis project titled **"[Your Thesis Title]"**. The goal of this project is to [briefly describe the goal of the project]. This thesis focuses on [brief overview of the problem you are solving], and aims to provide [a summary of your solution or contribution].
 **Objectives, goal, and features** - This are the objective:
 - [Objective 1] 
@@ -124,9 +125,12 @@ meta-ocl/
 
 ## Credits, Licence and Ackwnoledges
 
-Portions of the code used in this project are derived from [OCL survey](https://github.com/AlbinSou/ocl_survey) project. Credit goes to the original authors for their contributions, upon which this work is based.  
+Add here ...
+
+<!-- Portions of the code used in this project are derived from [OCL survey](https://github.com/AlbinSou/ocl_survey) project. Credit goes to the original authors for their contributions, upon which this work is based.  
 
 Code is available under MIT license. See [LICENSE](LICENSE) for the full license.
+-->
 
 
 
