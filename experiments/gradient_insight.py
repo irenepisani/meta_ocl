@@ -16,7 +16,7 @@ import src.toolkit.utils as utils
 from avalanche.benchmarks.scenarios import OnlineCLScenario
 from src.factories.benchmark_factory import DS_SIZES
 
-# hello
+
 @hydra.main(config_path="../config", config_name="config.yaml")
 def main(config):
     utils.set_seed(config.experiment.seed)
@@ -44,6 +44,9 @@ def main(config):
 
     if scheduler_plugin is not None:
         plugins.append(scheduler_plugin)
+
+    if gradient_plugin is notNone:
+        plugins.append(gradient_plugin)
 
     exp_name = (
         config.strategy.name
