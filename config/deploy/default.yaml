@@ -4,4 +4,4 @@ experiment:
   results_root: ../results
 
 benchmark:
-  dataset_root: /DATA/data
+  dataset_root: /data/i.pisani/meta_ocl/data
