@@ -2,3 +2,4 @@ defaults:
   - method_defaults.yaml
 
 name: er
+monitor_grads: true

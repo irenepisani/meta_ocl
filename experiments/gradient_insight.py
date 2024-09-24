@@ -45,9 +45,6 @@ def main(config):
     if scheduler_plugin is not None:
         plugins.append(scheduler_plugin)
 
-    if gradient_plugin is notNone:
-        plugins.append(gradient_plugin)
-
     exp_name = (
         config.strategy.name
         + "_"

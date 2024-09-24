@@ -35,3 +35,28 @@ class TimeSinceStart(SupervisedPlugin):
                 x_plot=strategy.clock.train_iterations,
             )
         )
+
+class GradientNormPlugin(SupervisedPlugin):
+    def __init__(self):
+        super().__init__()
+        
+        self.gradient_norm = 0
+    
+    def after_backward(self, strategy, **kwargs):
+        
+        self.gradient_norm = 0
+        for p in strategy.model.parameters():
+            if p.grad is not None:
+                param_norm = p.grad.data.norm(2)
+                self.gradient_norm += param_norm.item() ** 2
+        
+        self.gradient_norm = self.gradient_norm ** 0.5
+        
+        strategy.evaluator.publish_metric_value(
+            MetricValue(
+                "Metric",
+                "gradients norm",
+                self.gradient_norm,
+                x_plot=strategy.clock.train_iterations,
+            )
+        )

@@ -28,10 +28,12 @@ from src.toolkit.cumulative_accuracies import CumulativeAccuracyPluginMetric
 from src.toolkit.json_logger import JSONLogger
 from src.toolkit.lambda_scheduler import LambdaScheduler
 from src.toolkit.metrics import ClockLoggingPlugin, TimeSinceStart
+# from src.toolkit.metrics import GradientNormPlugin
 from src.toolkit.parallel_eval import ParallelEvaluationPlugin
 from src.toolkit.probing import ProbingPlugin
 from src.toolkit.review_trick import ReviewTrickPlugin
 from src.toolkit.sklearn_probing import SKLearnProbingPlugin
+from src.toolkit.monitor_gradients import MonitorGradientsReplayPlugin
 
 
 """
@@ -82,6 +84,12 @@ def create_strategy(
         )
         replay_plugin = ReplayPlugin(**specific_args, storage_policy=storage_policy)
         plugins.append(replay_plugin)
+        
+        monitor_gradients = utils.extract_kwargs(["monitor_grads"], strategy_kwargs)
+        if monitor_gradients:
+            print("siiii")
+            monitor_gradients_plugin = MonitorGradientsReplayPlugin(**specific_args, storage_policy=storage_policy)
+            plugins.append(monitor_gradients_plugin)
 
     elif name == "der":
         strategy = "DER"
@@ -322,6 +330,7 @@ def get_loggers(loggers_list, logdir, prefix="logs"):
 
 def get_metrics(metric_names):
     metrics = []
+    #metrics.append(GradientNormPlugin())
     for m in metric_names:
         if m == "accuracy_metrics":
             metrics.append(accuracy_metrics(stream=True, experience=True))
