@@ -82,14 +82,18 @@ def create_strategy(
         storage_policy = ClassBalancedBuffer(
             max_size=specific_args["mem_size"], adaptive_size=True
         )
-        replay_plugin = ReplayPlugin(**specific_args, storage_policy=storage_policy)
-        plugins.append(replay_plugin)
+        #replay_plugin = ReplayPlugin(**specific_args, storage_policy=storage_policy)
+        #plugins.append(replay_plugin)
         
         monitor_gradients = utils.extract_kwargs(["monitor_grads"], strategy_kwargs)
         if monitor_gradients:
             print("siiii")
             monitor_gradients_plugin = MonitorGradientsReplayPlugin(**specific_args, storage_policy=storage_policy)
             plugins.append(monitor_gradients_plugin)
+        else:
+            replay_plugin = ReplayPlugin(**specific_args, storage_policy=storage_policy)
+            plugins.append(replay_plugin)
+
 
     elif name == "der":
         strategy = "DER"
