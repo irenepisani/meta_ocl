@@ -34,6 +34,7 @@ from src.toolkit.probing import ProbingPlugin
 from src.toolkit.review_trick import ReviewTrickPlugin
 from src.toolkit.sklearn_probing import SKLearnProbingPlugin
 from src.toolkit.monitor_gradients import MonitorGradientsReplayPlugin
+from src.toolkit.track_gradients import TrackGradientsPlugin
 
 
 """
@@ -87,12 +88,10 @@ def create_strategy(
         
         monitor_gradients = utils.extract_kwargs(["monitor_grads"], strategy_kwargs)
         if monitor_gradients:
-            print("siiii")
-            monitor_gradients_plugin = MonitorGradientsReplayPlugin(**specific_args, storage_policy=storage_policy)
+            #monitor_gradients_plugin = MonitorGradientsReplayPlugin(**specific_args, storage_policy=storage_policy)
+            monitor_gradients_plugin = TrackGradientsPlugin(**specific_args, storage_policy=storage_policy)
             plugins.append(monitor_gradients_plugin)
-        else:
-            replay_plugin = ReplayPlugin(**specific_args, storage_policy=storage_policy)
-            plugins.append(replay_plugin)
+
 
 
     elif name == "der":

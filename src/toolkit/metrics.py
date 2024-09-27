@@ -60,3 +60,18 @@ class GradientNormPlugin(SupervisedPlugin):
                 x_plot=strategy.clock.train_iterations,
             )
         )
+
+def track_metrics(
+    strategy: "SupervisedTemplate",
+    metric_name, 
+    metric_val,
+    clock_plot
+):
+    strategy.evaluator.publish_metric_value(
+        MetricValue(
+            "Metric",
+            metric_name,
+            metric_val,
+            x_plot=clock_plot 
+        )
+    )
