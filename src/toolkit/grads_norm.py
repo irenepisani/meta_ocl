@@ -14,6 +14,8 @@ def get_grad_norm(
         foreach: Optional[bool] = None) -> torch.Tensor:
 
     """
+    ---> This is pytorch code to compute norm of gradients (used in gradient clipping)
+
     Compute gradient norm of an iterable of parameters.
     The norm is computed over all gradients together, as if they were
     concatenated into a single vector.
@@ -34,6 +36,7 @@ def get_grad_norm(
     Returns:
         Total norm of the parameter gradients (viewed as a single vector).
     """
+
     if isinstance(parameters, torch.Tensor):
         parameters = [parameters]
     grads = [p.grad for p in parameters if p.grad is not None]
@@ -43,29 +46,14 @@ def get_grad_norm(
         return torch.tensor(0.)
     first_device = grads[0].device
     grouped_grads: Dict[Tuple[torch.device, torch.dtype], List[List[Tensor]]] \
-        = _group_tensors_by_device_and_dtype([[g.detach() for g in grads]])  # type: ignore[assignment]
+        = _group_tensors_by_device_and_dtype([[g.detach() for g in grads]])
 
-    if norm_type == inf:
-        norms = [torch.linalg.vector_norm(g.detach(), inf).to(first_device) for g in grads]
-        total_norm = norms[0] if len(norms) == 1 else torch.max(torch.stack(norms))
-    else:
-        norms = []
-        for ((device, _), ([grads], _)) in grouped_grads.items():  # type: ignore[assignment]
-            if (foreach is None or foreach) and _has_foreach_support(grads, device=device):
-                norms.extend(torch._foreach_norm(grads, norm_type))
-            elif foreach:
-                raise RuntimeError(f'foreach=True was passed, but can\'t use the foreach API on {device.type} tensors')
-            else:
-                norms.extend([torch.linalg.vector_norm(g, norm_type) for g in grads])
+    norms = []
+    for ((device, _), ([grads], _)) in grouped_grads.items():
+        norms.extend([torch.linalg.vector_norm(g, norm_type) for g in grads])
 
-        total_norm = torch.linalg.vector_norm(torch.stack([norm.to(first_device) for norm in norms]), norm_type)
-
-    if error_if_nonfinite and torch.logical_or(total_norm.isnan(), total_norm.isinf()):
-        raise RuntimeError(
-            f'The total norm of order {norm_type} for gradients from '
-            '`parameters` is non-finite, so it cannot be computed properly. To disable '
-            'this error and compute the gradients by the non-finite norm anyway, '
-            'set `error_if_nonfinite=False`')
+    total_norm = torch.linalg.vector_norm(torch.stack([norm.to(first_device) for norm in norms]), norm_type)
+    
     return total_norm
 
 

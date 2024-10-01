@@ -88,8 +88,7 @@ def create_strategy(
         
         monitor_gradients = utils.extract_kwargs(["monitor_grads"], strategy_kwargs)
         if monitor_gradients:
-            #monitor_gradients_plugin = MonitorGradientsReplayPlugin(**specific_args, storage_policy=storage_policy)
-            monitor_gradients_plugin = TrackGradientsPlugin(**specific_args, storage_policy=storage_policy)
+            monitor_gradients_plugin = TrackGradientsPlugin(storage_policy=storage_policy)
             plugins.append(monitor_gradients_plugin)
 
 

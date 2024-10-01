@@ -15,7 +15,7 @@ scheduler:
   type: null
 optimizer:
   type: SGD
-  lr: 0.1
+  lr: 0.0598728574654861
   momentum: 0.0
   weight_decay: 0.0
 model:
@@ -32,8 +32,8 @@ strategy:
   monitor_grads: true
 evaluation:
   peval_mode: experience
-  parallel_evaluation: false
-  eval_every: -1
+  parallel_evaluation: true
+  eval_every: 1
   metrics:
   - accuracy_metrics
   - cumulative_accuracy
@@ -45,9 +45,13 @@ evaluation:
   - text
   - tensorboard
   - json
+  eval_mb_size: 128
+  device: cuda
   num_gpus: 0.15
   num_cpus: 1
   num_actors: 3
+  loggers_parallel:
+  - json
 experiment:
   results_root: ../results
   seed: 0

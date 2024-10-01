@@ -13,17 +13,51 @@ from avalanche.models import avalanche_forward
 from src.toolkit.grads_norm import get_grad_norm
 from src.toolkit.metrics import track_metrics
 
-def get_grads(data, strategy, **kwargs):
-    
-    strategy.optimizer.zero_grad()
-    
-    x_data, y_data, t_data = data[0], data[1], data[2]
-    x_data, y_data = x_data.to(strategy.device), y_data.to(strategy.device)
+from typing import Union, Iterable, List, Dict, Tuple, Optional, cast
 
-    out = avalanche_forward(strategy.model, x_data, t_data)
-    loss = strategy._criterion(out, y_data)
-    loss.backward()
+import torch
+from torch import Tensor, inf
+from torch.utils._foreach_utils import _group_tensors_by_device_and_dtype, _has_foreach_support
+
+_tensor_or_tensors = Union[torch.Tensor, Iterable[torch.Tensor]]
+
+def get_grads_and_norms(
+    data, 
+    strategy, 
+    all_minibatch: bool = False,
+    norm_type: float = 2.0,
+    **kwargs
+    ):
+    """ 
+    Get gradients for a given set of data from buffer, train stream or val stream. 
     
+    TO DO: code refactoring of this function.
+    """
+    
+    if all_minibatch == False:
+        strategy.optimizer.zero_grad()
+        
+        x_data, y_data, t_data = data[0], data[1], data[2]
+        x_data, y_data = x_data.to(strategy.device), y_data.to(strategy.device)
+
+        out = avalanche_forward(strategy.model, x_data, t_data)
+        loss = strategy._criterion(out, y_data)
+        loss.backward()
+
+    # ---> This is pytorch code to compute norm of gradients (used in gradient clipping)
+    grads = [p.grad for p in strategy.model.parameters() if p.grad is not None]
+    norm_type = float(norm_type) 
+    if len(grads) == 0:
+        return torch.tensor(0.)
+    first_device = grads[0].device
+    grouped_grads: Dict[Tuple[torch.device, torch.dtype], List[List[Tensor]]] \
+        = _group_tensors_by_device_and_dtype([[g.detach() for g in grads]])
+    norms = []
+    for ((device, _), ([grads], _)) in grouped_grads.items():
+        norms.extend([torch.linalg.vector_norm(g, norm_type) for g in grads])
+    total_norm = torch.linalg.vector_norm(torch.stack([norm.to(first_device) for norm in norms]), norm_type)
+
+    # --> This gem-style gradients computations (used in gradient gem strategy)
     grads_list = [
         p.grad.view(-1)
         if p.grad is not None
@@ -31,12 +65,14 @@ def get_grads(data, strategy, **kwargs):
         for n, p in strategy.model.named_parameters()
     ]
 
-    return torch.cat(grads_list)
+    return torch.cat(grads_list), total_norm
 
 class BufferLabels(DataAttribute):
     """
     Buffer labels are `DataAttribute`s that are 
     automatically appended to the minibatch.
+        0 -> data is not from buffer 
+        1 -> data is from buffer
     """
     
     def __init__(self, buffer_labels):
@@ -45,23 +81,14 @@ class BufferLabels(DataAttribute):
 
 class TrackGradientsPlugin(SupervisedPlugin, supports_distributed=True):
     """
-    Monitor gradients insight at each training iteration. 
+    Monitor gradients at each training iteration. 
     """
 
     def __init__(
         self,
-        mem_size: int = 200,
-        batch_size: Optional[int] = None,
-        batch_size_mem: Optional[int] = None,
-        task_balanced_dataloader: bool = False,
         storage_policy: Optional["ExemplarsBuffer"] = None,
     ):
         super().__init__()
-        
-        self.mem_size = mem_size
-        self.batch_size = batch_size
-        self.batch_size_mem = batch_size_mem
-        self.task_balanced_dataloader = task_balanced_dataloader
         
         self.grads_norm = None
         self.grads_norm_new = None
@@ -77,198 +104,70 @@ class TrackGradientsPlugin(SupervisedPlugin, supports_distributed=True):
     def after_train_dataset_adaptation(
         self,
         strategy: "SupervisedTemplate",
-        num_workers: int = 0,
-        shuffle: bool = True,
-        drop_last: bool = False,
         **kwargs
     ):
+
         if len(self.storage_policy.buffer) == 0:
-            print("here 1")
             return
 
+        # update buffer labels on new train data from stream
         assert strategy.adapted_dataset is not None
         strategy.adapted_dataset = strategy.adapted_dataset.update_data_attribute(
             "buffer_labels", BufferLabels(np.full(len(strategy.adapted_dataset), 0)))
         
+        # update buffer labels on old buffer data
         for k, v in self.storage_policy.buffer_groups.items():
             self.storage_policy.buffer_groups[k].buffer = v.buffer.update_data_attribute(
             "buffer_labels", BufferLabels(np.full(len(v.buffer), 1)) )
-
-            '''
-            for i in range(len(self.storage_policy.buffer_groups)):
-                # print(self.storage_policy.buffer_groups[i].max_size)
-                self.storage_policy.buffer_groups[i].buffer = self.storage_policy.buffer_groups[i].buffer.update_data_attribute(
-                "buffer_labels", BufferLabels(np.full(len(self.storage_policy.buffer_groups[i].buffer), 1)) )
-            '''
 
     def after_backward(self, strategy, **kwargs): 
         """
         Monitor 2-Norm of the gradients computed 
         over the entire minibatch (both new data and old data)
         """
-        self.grads_norm = get_grad_norm(strategy.model.parameters())
-        #print(strategy.mbatch[-1])
+        _, self.grads_norm = get_grads_and_norms(strategy.mbatch, strategy, all_minibatch=True)
+        #print(strategy.mbatch[-1]) # able this to check correct labels –
 
         if self.storage_policy is not None: 
             if len(self.storage_policy.buffer) == 0:
                 return
                   
-            # Separate old buffer data and new train data
+            # Given the currrent minibatch, separate old buffer data and new train data
             new_data = [strategy.mbatch[i][strategy.mbatch[-1] == 0] for i in range(len(strategy.mbatch))]
             old_data = [strategy.mbatch[i][strategy.mbatch[-1] == 1] for i in range(len(strategy.mbatch))]
-            #val_data = strategy.current_eval_stream
-            #print(val_data)
 
-            grads_new = get_grads(new_data, strategy, **kwargs)
-            self.grads_norm_new = get_grad_norm(strategy.model.parameters())
-            grads_old = get_grads(old_data, strategy, **kwargs)
-            self.grads_norm_old = get_grad_norm(strategy.model.parameters())
-            #grads_val = get_grads(val_data, strategy, **kwargs)
-            #self.grads_norm_val = get_grad_norm(strategy.model.parameters())
+            # Compute gradients 2-norm
+            grads_new, self.grads_norm_new = get_grads_and_norms(new_data, strategy, **kwargs)
+            grads_old, self.grads_norm_old = get_grads_and_norms(old_data, strategy, **kwargs)
 
+            # Compute gradients cosine similarity
             cosine_similarity = torch.nn.CosineSimilarity(dim=0) 
             self.grads_cos_sim_tr = cosine_similarity(grads_old, grads_new) 
-            #self.grads_cos_sim_vl = cosine_similarity(grads_old, grads_val)
         
+        # add metrics to loggers 
         track_metrics(strategy, "data_grads_norm",self.grads_norm.item(), strategy.clock.train_iterations)
         track_metrics(strategy, "new_data_grads_norm", self.grads_norm_new.item(), strategy.clock.train_iterations) 
         track_metrics(strategy, "old_data_grads_norm", self.grads_norm_old.item(), strategy.clock.train_iterations) 
-        #track_metrics(strategy, "val_data_grads_norm", self.grads_norm_val.item(), strategy.clock.train_iterations) 
         track_metrics(strategy, "sim_grads_norm_tr", self.grads_cos_sim_tr.item(), strategy.clock.train_iterations) 
-        #track_metrics(strategy, "sim_grads_norm_vl", self.grads_cos_sim_vl.item(), strategy.clock.train_iterations) 
+        
 
 '''
     def after_eval_iteration(self, strategy, **kwargs):
         val_data = strategy.current_eval_stream
         print(val_data)
-    
-    def after_eval_dataset_adaptation(self, strategy: "SupervisedTemplate",**kwargs):
         
-        assert strategy.adapted_dataset is not None
-        strategy.adapted_dataset = strategy.adapted_dataset.update_data_attribute(
-            "buffer_labels", BufferLabels(np.full(len(strategy.adapted_dataset), 0)))
-
- '''
-'''
-
-class TrackGradientsPlugin(SupervisedPlugin, supports_distributed=True):
-    """
-    Monitor gradients insight at each training iteration. 
-    """
-
-    def __init__(
-        self,
-        mem_size: int = 200,
-        batch_size: Optional[int] = None,
-        batch_size_mem: Optional[int] = None,
-        task_balanced_dataloader: bool = False,
-        storage_policy: Optional["ExemplarsBuffer"] = None,
-    ):
-        super().__init__()
+        to do:
+            - get forward output on current_eval_stream (that should be validation)
+            - compute the following:
+            #grads_val = get_grads(val_data, strategy, **kwargs)
+            #self.grads_norm_val = get_grad_norm(strategy.model.parameters())
+            #self.grads_cos_sim_vl = cosine_similarity(grads_old, grads_val)
+            #track_metrics(strategy, "val_data_grads_norm", self.grads_norm_val.item(), strategy.clock.train_iterations) 
+            #track_metrics(strategy, "sim_grads_norm_vl", self.grads_cos_sim_vl.item(), strategy.clock.train_iterations) 
         
-        self.mem_size = mem_size
-        self.batch_size = batch_size
-        self.batch_size_mem = batch_size_mem
-        self.task_balanced_dataloader = task_balanced_dataloader
 
-        if storage_policy is not None:  # Use other storage policy
-            self.storage_policy = storage_policy
-            assert storage_policy.max_size == self.mem_size
-        else:  # Default
-            self.storage_policy = ExperienceBalancedBuffer(
-                max_size=self.mem_size, adaptive_size=True
-            )
-        print(len(self.storage_policy.buffer))
-        self.grads_norm = None
-        self.grads_norm_new = None
-        self.grads_norm_old = None
-        self.grads_cos_sim  = None
+– '''
 
-        if storage_policy is not None:
-            self.storage_policy = storage_policy
-    
-    def before_training_exp(
-        self,
-        strategy: "SupervisedTemplate",
-        num_workers: int = 0,
-        shuffle: bool = True,
-        drop_last: bool = False,
-        **kwargs
-    ):
-        if len(self.storage_policy.buffer) == 0:
-            print("here 1")
-            return
-
-        batch_size = self.batch_size
-        if batch_size is None:
-            batch_size = strategy.train_mb_size
-
-        batch_size_mem = self.batch_size_mem
-        if batch_size_mem is None:
-            batch_size_mem = strategy.train_mb_size
-        
-        assert strategy.adapted_dataset is not None
-        strategy.adapted_dataset = strategy.adapted_dataset.update_data_attribute(
-            "buffer_labels", BufferLabels(np.full(len(strategy.adapted_dataset), 0)))
-        
-        for k, v in self.storage_policy.buffer_groups.items():
-            self.storage_policy.buffer_groups[k].buffer = v.buffer.update_data_attribute(
-            "buffer_labels", BufferLabels(np.full(len(v.buffer), 1)) )
-
-            
-            #for i in range(len(self.storage_policy.buffer_groups)):
-                # print(self.storage_policy.buffer_groups[i].max_size)
-                #self.storage_policy.buffer_groups[i].buffer = self.storage_policy.buffer_groups[i].buffer.update_data_attribute(
-                #"buffer_labels", BufferLabels(np.full(len(self.storage_policy.buffer_groups[i].buffer), 1)) )
-            
-
-        strategy.dataloader = ReplayDataLoader(
-            strategy.adapted_dataset,
-            self.storage_policy.buffer,
-            oversample_small_tasks = True,
-            batch_size = batch_size,
-            batch_size_mem = batch_size_mem,
-            task_balanced_dataloader = self.task_balanced_dataloader,
-            num_workers = num_workers,
-            shuffle = shuffle,
-            drop_last = drop_last,
-        )
-                        
-    def after_backward(self, strategy, **kwargs): 
-        """
-        Monitor 2-Norm of the gradients computed 
-        over the entire minibatch (both new data and old data)
-        """
-        self.grads_norm = get_grad_norm(strategy.model.parameters())
-
-        if self.storage_policy is not None: 
-            if len(self.storage_policy.buffer) == 0:
-                return
-                  
-            # Separate old buffer data and new data
-            new_data = [strategy.mbatch[i][strategy.mbatch[-1] == 0] for i in range(len(strategy.mbatch))]
-            old_data = [strategy.mbatch[i][strategy.mbatch[-1] == 1] for i in range(len(strategy.mbatch))]
-
-            grads_new = get_grads(new_data, strategy, **kwargs)
-            self.grads_norm_new = get_grad_norm(strategy.model.parameters())
-            grads_old = get_grads(old_data, strategy, **kwargs)
-            self.grads_norm_old = get_grad_norm(strategy.model.parameters())
-
-            cosine_similarity = torch.nn.CosineSimilarity(dim=0) 
-            self.grads_cos_sim = cosine_similarity(grads_old, grads_new) 
-        
-        track_metrics(strategy, "data_grads_norm",self.grads_norm.item(), strategy.clock.train_iterations)
-        track_metrics(strategy, "new_data_grads_norm", self.grads_norm_new.item(), strategy.clock.train_iterations) 
-        track_metrics(strategy, "old_data_grads_norm", self.grads_norm_old.item(), strategy.clock.train_iterations) 
-        track_metrics(strategy, "sim_grads_norm", self.grads_cos_sim.item(), strategy.clock.train_iterations) 
-
-    def after_training_exp(
-        self,
-        strategy: "SupervisedTemplate",
-        **kwargs
-    ):
-        self.storage_policy.update(strategy, **kwargs)
-'''
     
    
         
