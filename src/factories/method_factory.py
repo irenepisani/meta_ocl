@@ -28,13 +28,15 @@ from src.toolkit.cumulative_accuracies import CumulativeAccuracyPluginMetric
 from src.toolkit.json_logger import JSONLogger
 from src.toolkit.lambda_scheduler import LambdaScheduler
 from src.toolkit.metrics import ClockLoggingPlugin, TimeSinceStart
-# from src.toolkit.metrics import GradientNormPlugin
+
 from src.toolkit.parallel_eval import ParallelEvaluationPlugin
 from src.toolkit.probing import ProbingPlugin
 from src.toolkit.review_trick import ReviewTrickPlugin
 from src.toolkit.sklearn_probing import SKLearnProbingPlugin
-from src.toolkit.monitor_gradients import MonitorGradientsReplayPlugin
+
 from src.toolkit.track_gradients import TrackGradientsPlugin
+
+
 
 
 """
@@ -343,6 +345,8 @@ def get_metrics(metric_names):
             metrics.append(loss_metrics(epoch=True))
         elif m == "cumulative_accuracy":
             metrics.append(CumulativeAccuracyPluginMetric())
+        #elif m == "gradient_norm":
+        #    metrics.append(GradsNormPlugin())
         elif m == "time":
             metrics.append(TimeSinceStart())
         elif m == "clock":

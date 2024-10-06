@@ -2,7 +2,16 @@ import sys
 import numpy as np
 import torch
 from typing import Optional
+#!/usr/bin/env python3
+import copy
+import os
+from collections import defaultdict
 
+import torch
+import torch.nn as nn
+
+from avalanche.benchmarks.scenarios import OnlineCLExperience
+from avalanche.models.dynamic_modules import IncrementalClassifier
 from avalanche.benchmarks.utils import concat_classification_datasets
 from avalanche.benchmarks.utils.data_loader import ReplayDataLoader
 from avalanche.benchmarks.utils.data_attribute import DataAttribute
@@ -21,10 +30,28 @@ from torch.utils._foreach_utils import _group_tensors_by_device_and_dtype, _has_
 
 _tensor_or_tensors = Union[torch.Tensor, Iterable[torch.Tensor]]
 
+def get_grad_normL2(strategy, norm_type: float = 2):
+    """Returns the gradient norm of the model.
+    Calculated the same way as torch.clip_grad_norm_"""
+
+    # Params with grad
+    parameters = model.parameters()
+    if isinstance(model.parameters(), torch.Tensor):
+        parameters = [parameters]
+    parameters = [p for p in parameters if p.grad is not None]
+    if len(parameters) == 0:
+        return None
+    device = parameters[0].grad.device
+
+    # calc norm
+    total_norm = torch.norm(torch.stack(
+        [torch.norm(p.grad.detach(), norm_type).to(device) for p in parameters]), norm_type)
+    return total_norm.item()
+
 def get_grads_and_norms(
-    data, 
-    strategy, 
-    all_minibatch: bool = False,
+    strategy: "SupervisedTemplate",
+    full_mb: bool = False,
+    data: Optional[Tensor] = None,
     norm_type: float = 2.0,
     **kwargs
     ):
@@ -33,39 +60,56 @@ def get_grads_and_norms(
     
     TO DO: code refactoring of this function.
     """
+    if strategy.is_training == False:
+        #loss = strategy.loss
+        #loss.backward()
+            # ---> This is pytorch code to compute norm of gradients (used in gradient clipping)
+        grads = [p.grad for p in strategy.model.parameters() if p.grad is not None]
+        norm_type = float(norm_type) 
+        if len(grads) == 0:
+            return torch.tensor(0.)
+        first_device = grads[0].device
+        grouped_grads: Dict[Tuple[torch.device, torch.dtype], List[List[Tensor]]] \
+            = _group_tensors_by_device_and_dtype([[g.detach() for g in grads]])
+        norms = []
+        for ((device, _), ([grads], _)) in grouped_grads.items():
+            norms.extend([torch.linalg.vector_norm(g, norm_type) for g in grads])
+        total_norm = torch.linalg.vector_norm(torch.stack([norm.to(first_device) for norm in norms]), norm_type)
+        return total_norm
     
-    if all_minibatch == False:
-        strategy.optimizer.zero_grad()
+    else: 
+        if full_mb == False:
+            strategy.optimizer.zero_grad()
+            
+            x_data, y_data, t_data = data[0], data[1], data[2]
+            x_data, y_data = x_data.to(strategy.device), y_data.to(strategy.device)
+
+            out = avalanche_forward(strategy.model, x_data, t_data)
+            loss = strategy._criterion(out, y_data)
+            loss.backward()
         
-        x_data, y_data, t_data = data[0], data[1], data[2]
-        x_data, y_data = x_data.to(strategy.device), y_data.to(strategy.device)
+        # ---> This is pytorch code to compute norm of gradients (used in gradient clipping)
+        grads = [p.grad for p in strategy.model.parameters() if p.grad is not None]
+        norm_type = float(norm_type) 
+        if len(grads) == 0:
+            return torch.tensor(0.)
+        first_device = grads[0].device
+        grouped_grads: Dict[Tuple[torch.device, torch.dtype], List[List[Tensor]]] \
+            = _group_tensors_by_device_and_dtype([[g.detach() for g in grads]])
+        norms = []
+        for ((device, _), ([grads], _)) in grouped_grads.items():
+            norms.extend([torch.linalg.vector_norm(g, norm_type) for g in grads])
+        total_norm = torch.linalg.vector_norm(torch.stack([norm.to(first_device) for norm in norms]), norm_type)
 
-        out = avalanche_forward(strategy.model, x_data, t_data)
-        loss = strategy._criterion(out, y_data)
-        loss.backward()
+        # --> This gem-style gradients computations (used in gradient gem strategy)
+        grads_list = [
+            p.grad.view(-1)
+            if p.grad is not None
+            else torch.zeros(p.numel(), device=strategy.device)
+            for n, p in strategy.model.named_parameters()
+        ]
 
-    # ---> This is pytorch code to compute norm of gradients (used in gradient clipping)
-    grads = [p.grad for p in strategy.model.parameters() if p.grad is not None]
-    norm_type = float(norm_type) 
-    if len(grads) == 0:
-        return torch.tensor(0.)
-    first_device = grads[0].device
-    grouped_grads: Dict[Tuple[torch.device, torch.dtype], List[List[Tensor]]] \
-        = _group_tensors_by_device_and_dtype([[g.detach() for g in grads]])
-    norms = []
-    for ((device, _), ([grads], _)) in grouped_grads.items():
-        norms.extend([torch.linalg.vector_norm(g, norm_type) for g in grads])
-    total_norm = torch.linalg.vector_norm(torch.stack([norm.to(first_device) for norm in norms]), norm_type)
-
-    # --> This gem-style gradients computations (used in gradient gem strategy)
-    grads_list = [
-        p.grad.view(-1)
-        if p.grad is not None
-        else torch.zeros(p.numel(), device=strategy.device)
-        for n, p in strategy.model.named_parameters()
-    ]
-
-    return torch.cat(grads_list), total_norm
+        return torch.cat(grads_list), total_norm
 
 class BufferLabels(DataAttribute):
     """
@@ -90,12 +134,15 @@ class TrackGradientsPlugin(SupervisedPlugin, supports_distributed=True):
     ):
         super().__init__()
         
+        # grads metrics
         self.grads_norm = None
         self.grads_norm_new = None
         self.grads_norm_old = None
-        self.grads_norm_val = None
         self.grads_cos_sim_tr = None
-        self.grads_cos_sim_vl = None
+        self.mean_eval_iter_norms = []
+
+
+        self.training_model = None 
 
 
         if storage_policy is not None:
@@ -125,7 +172,7 @@ class TrackGradientsPlugin(SupervisedPlugin, supports_distributed=True):
         Monitor 2-Norm of the gradients computed 
         over the entire minibatch (both new data and old data)
         """
-        _, self.grads_norm = get_grads_and_norms(strategy.mbatch, strategy, all_minibatch=True)
+        _, self.grads_norm = get_grads_and_norms(strategy, True)
         #print(strategy.mbatch[-1]) # able this to check correct labels –
 
         if self.storage_policy is not None: 
@@ -137,8 +184,8 @@ class TrackGradientsPlugin(SupervisedPlugin, supports_distributed=True):
             old_data = [strategy.mbatch[i][strategy.mbatch[-1] == 1] for i in range(len(strategy.mbatch))]
 
             # Compute gradients 2-norm
-            grads_new, self.grads_norm_new = get_grads_and_norms(new_data, strategy, **kwargs)
-            grads_old, self.grads_norm_old = get_grads_and_norms(old_data, strategy, **kwargs)
+            grads_new, self.grads_norm_new = get_grads_and_norms(strategy, False, new_data)
+            grads_old, self.grads_norm_old = get_grads_and_norms(strategy, False, old_data)
 
             # Compute gradients cosine similarity
             cosine_similarity = torch.nn.CosineSimilarity(dim=0) 
@@ -149,26 +196,98 @@ class TrackGradientsPlugin(SupervisedPlugin, supports_distributed=True):
         track_metrics(strategy, "new_data_grads_norm", self.grads_norm_new.item(), strategy.clock.train_iterations) 
         track_metrics(strategy, "old_data_grads_norm", self.grads_norm_old.item(), strategy.clock.train_iterations) 
         track_metrics(strategy, "sim_grads_norm_tr", self.grads_cos_sim_tr.item(), strategy.clock.train_iterations) 
-        
 
-'''
-    def after_eval_iteration(self, strategy, **kwargs):
-        val_data = strategy.current_eval_stream
-        print(val_data)
-        
-        to do:
-            - get forward output on current_eval_stream (that should be validation)
-            - compute the following:
-            #grads_val = get_grads(val_data, strategy, **kwargs)
-            #self.grads_norm_val = get_grad_norm(strategy.model.parameters())
-            #self.grads_cos_sim_vl = cosine_similarity(grads_old, grads_val)
-            #track_metrics(strategy, "val_data_grads_norm", self.grads_norm_val.item(), strategy.clock.train_iterations) 
-            #track_metrics(strategy, "sim_grads_norm_vl", self.grads_cos_sim_vl.item(), strategy.clock.train_iterations) 
-        
+    '''    
+    @torch.enable_grad()
+    def before_eval(self, strategy, **kwargs):
+        torch.set_grad_enabled(True)
 
-– '''
+    def before_eval_iteration(self, strategy, **kwargs):
+        #torch.enable_grad()
 
+        #def after_eval_iteration(self, strategy, **kwargs):
+        #with torch.enable_grad():
+        #weights.requires_grad_()
+        with torch.set_grad_enabled(True):
+            for param in strategy.model.parameters():
+                param.requires_grad_()
+            
+            strategy.optimizer.zero_grad()
+            #strategy.mb_x.requires_grad_
+            data = strategy.mbatch
+            #data.requires_grad(True)
+            x_data, y_data, t_data = data[0], data[1], data[2]
+            x_data, y_data = x_data.to(strategy.device), y_data.to(strategy.device)
+
+            out = avalanche_forward(strategy.model, x_data, t_data)
+            #out.requires_grad_()
+            loss = strategy._criterion(out, y_data)
+            #loss.backward()
+        
+            grads = torch.autograd.grad(loss, strategy.model.named_parameters())
+            norm_type = float(norm_type) 
+            if len(grads) == 0:
+                return torch.tensor(0.)
+            first_device = grads[0].device
+            grouped_grads: Dict[Tuple[torch.device, torch.dtype], List[List[Tensor]]] \
+                = _group_tensors_by_device_and_dtype([[g.detach() for g in grads]])
+            norms = []
+            for ((device, _), ([grads], _)) in grouped_grads.items():
+                norms.extend([torch.linalg.vector_norm(g, norm_type) for g in grads])
+            total_norm = torch.linalg.vector_norm(torch.stack([norm.to(first_device) for norm in norms]), norm_type)
+
+            #_ , val_grads_norm = get_grads_and_norms(strategy)
+            self.mean_eval_iter_norms.append( total_norm.item())
     
+    def after_eval(self, strategy, **kwargs):
+        track_metrics(strategy, "Eval/grads_norm_iter", np.mean(self.mean_eval_iter_norms.item(), strategy.clock.train_iterations))
+        self.mean_eval_iter_norms   = []
+        
+
+    '''
+
+
+    @torch.enable_grad()
+    def after_eval_iteration(self, strategy, **kwargs):
+        model_copy = copy.deepcopy(strategy.model)
+        self.training_model = strategy.model
+        strategy.model = model_copy
+        
+        strategy.model.train()
+        optimizer = torch.optim.SGD(
+            strategy.model.parameters(), lr=strategy.optimizer.param_groups[0]["lr"]
+        )
+        mbatch = strategy.mbatch
+        strategy.mb_output = strategy.forward()
+        loss = strategy.criterion()
+
+        optimizer.zero_grad()
+        loss.backward()
+
+        grads = [p.grad for p in strategy.model.parameters() if p.grad is not None]
+        norm_type = float(2.0) 
+        if len(grads) == 0:
+            return torch.tensor(0.)
+        first_device = grads[0].device
+        grouped_grads: Dict[Tuple[torch.device, torch.dtype], List[List[Tensor]]] \
+            = _group_tensors_by_device_and_dtype([[g.detach() for g in grads]])
+        norms = []
+        for ((device, _), ([grads], _)) in grouped_grads.items():
+            norms.extend([torch.linalg.vector_norm(g, norm_type) for g in grads])
+        total_norm = torch.linalg.vector_norm(torch.stack([norm.to(first_device) for norm in norms]), norm_type)
+        print(total_norm)                
+        
+        #_ , val_grads_norm = get_grads_and_norms(strategy)
+        self.mean_eval_iter_norms.append(total_norm.item())
+        
+        strategy.model.eval()
+        strategy.model = self.training_model
+    
+    def after_eval(self, strategy, **kwargs):
+        track_metrics(strategy, "ValidStream/mean_grads_norm_iter", np.mean(self.mean_eval_iter_norms), strategy.clock.train_iterations)
+        self.mean_eval_iter_norms   = []
+
+        
    
         
        

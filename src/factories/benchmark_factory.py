@@ -20,6 +20,7 @@ Benchmarks factory
 DS_SIZES = {
     "split_imagenet": (224, 224, 3),
     "split_cifar100": (32, 32, 3),
+    "split_cifar10": (32, 32, 3),
     "split_tinyimagenet": (64, 64, 3),
     "split_miniimagenet": (84, 84, 3),
 }
@@ -27,6 +28,7 @@ DS_SIZES = {
 DS_CLASSES = {
     "split_imagenet": 1000,
     "split_cifar100": 100,
+    "split_cifar10": 100,
     "split_tinyimagenet": 200,
 }
 

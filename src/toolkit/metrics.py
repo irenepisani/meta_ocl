@@ -36,6 +36,7 @@ class TimeSinceStart(SupervisedPlugin):
             )
         )
 
+'''
 class GradientNormPlugin(SupervisedPlugin):
     def __init__(self):
         super().__init__()
@@ -60,6 +61,7 @@ class GradientNormPlugin(SupervisedPlugin):
                 x_plot=strategy.clock.train_iterations,
             )
         )
+'''
 
 def track_metrics(
     strategy: "SupervisedTemplate",
@@ -75,3 +77,4 @@ def track_metrics(
             x_plot=clock_plot 
         )
     )
+

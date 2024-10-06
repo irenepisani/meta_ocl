@@ -1,4 +1,4 @@
-peval_mode: experience
+peval_mode: iteration
 parallel_evaluation: false
 eval_every: -1
 metrics: 
