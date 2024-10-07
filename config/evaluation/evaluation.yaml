@@ -1,6 +1,6 @@
 peval_mode: iteration
 parallel_evaluation: false
-eval_every: -1
+eval_every: 1
 metrics: 
   - accuracy_metrics
   - cumulative_accuracy

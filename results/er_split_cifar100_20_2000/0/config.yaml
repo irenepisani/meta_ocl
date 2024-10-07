@@ -31,7 +31,7 @@ strategy:
   name: er
   monitor_grads: true
 evaluation:
-  peval_mode: experience
+  peval_mode: iteration
   parallel_evaluation: true
   eval_every: 1
   metrics:

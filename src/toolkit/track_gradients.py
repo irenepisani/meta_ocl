@@ -275,7 +275,7 @@ class TrackGradientsPlugin(SupervisedPlugin, supports_distributed=True):
         for ((device, _), ([grads], _)) in grouped_grads.items():
             norms.extend([torch.linalg.vector_norm(g, norm_type) for g in grads])
         total_norm = torch.linalg.vector_norm(torch.stack([norm.to(first_device) for norm in norms]), norm_type)
-        print(total_norm)                
+        #print(total_norm)                
         
         #_ , val_grads_norm = get_grads_and_norms(strategy)
         self.mean_eval_iter_norms.append(total_norm.item())

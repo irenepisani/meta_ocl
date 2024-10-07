@@ -14,6 +14,6 @@ evaluation:
   num_actors: 3
 
 strategy:
-  train_epochs: 3
+  train_epochs: 1
   train_mb_size: 10
   mem_size: 2000
